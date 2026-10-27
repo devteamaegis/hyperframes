@@ -700,12 +700,13 @@ export const mediaRules: Array<(ctx: LintContext) => HyperframeLintFinding[]> = 
   ({ source }) => {
     const findings: HyperframeLintFinding[] = [];
     const base64MediaRe =
-      /src\s*=\s*["'](data:(?:audio|video)\/[^;]+;base64,([A-Za-z0-9+/=]{20,}))["']/gi;
+      /src\s*=\s*["'](data:(?:audio|video)\/[^;,"']+(?:;[^;,"']*)*;base64,([A-Za-z0-9+/=\s]{20,}))["']/gi;
     let b64Match: RegExpExecArray | null;
     while ((b64Match = base64MediaRe.exec(source)) !== null) {
-      const sample = (b64Match[2] || "").slice(0, 200);
+      const payload = (b64Match[2] || "").replace(/\s/g, "");
+      const sample = payload.slice(0, 200);
       const uniqueChars = new Set(sample.replace(/[A-Za-z0-9+/=]/g, (c) => c)).size;
-      const dataSize = Math.round(((b64Match[2] || "").length * 3) / 4);
+      const dataSize = Math.round((payload.length * 3) / 4);
       const isSuspicious = uniqueChars < 15 || (dataSize > 1000 && dataSize < 50000);
       findings.push({
         code: "base64_media_prohibited",

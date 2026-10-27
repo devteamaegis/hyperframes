@@ -1560,6 +1560,42 @@ describe("placeholder_media_url", () => {
   });
 });
 
+describe("base64_media_prohibited", () => {
+  const page = (media: string) => `<!DOCTYPE html><html><body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="10">
+      ${media}
+    </div>
+  </body></html>`;
+  const payload =
+    "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7";
+  const wrapped = (payload.match(/.{1,76}/g) ?? []).join("\n");
+
+  it.each([
+    ["audio/mpeg", `data:audio/mpeg;base64,${payload}`],
+    ["a codecs parameter", `data:audio/webm;codecs=opus;base64,${payload}`],
+    ["two parameters", `data:video/mp4;codecs=avc1.42E01E;name=clip.mp4;base64,${payload}`],
+    [
+      "an entity-quoted parameter",
+      `data:video/mp4;codecs=&quot;avc1.42E01E&quot;;base64,${payload}`,
+    ],
+    ["line-wrapped base64", `data:audio/mpeg;base64,${wrapped}`],
+  ])("errors on inline media with %s", async (_label, src) => {
+    const result = await lintHyperframeHtml(
+      page(`<audio id="a1" src="${src}" data-start="0" data-duration="4"></audio>`),
+    );
+    const finding = result.findings.find((f) => f.code === "base64_media_prohibited");
+    expect(finding?.severity).toBe("error");
+  });
+
+  it("stays quiet on a file src and an inline image", async () => {
+    const result = await lintHyperframeHtml(
+      page(`<audio id="a1" src="assets/music.mp3" data-start="0" data-duration="4"></audio>
+      <img id="i1" src="data:image/png;base64,${payload}">`),
+    );
+    expect(result.findings.some((f) => f.code === "base64_media_prohibited")).toBe(false);
+  });
+});
+
 describe("speed_ramp_on_non_media", () => {
   const RATE = `data-automation='{"version":1,"lanes":[{"target":"rate","points":[{"t":0,"v":1},{"t":2,"v":3}]}]}'`;
   const page = (tag: string) => `<!DOCTYPE html><html><body>
