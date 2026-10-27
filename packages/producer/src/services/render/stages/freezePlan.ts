@@ -54,7 +54,6 @@ export interface LockedRenderConfig extends Pick<RenderRequestOptions, "pageMoti
    */
   quality: "draft" | "standard" | "high";
   ffmpegVersion: string;
-  /** Set only when a MOV plan uses a non-default ProRes profile; workers rebuild the preset from it. */
   proresProfile?: ProresProfile;
   preset: string;
   crf?: number;
