@@ -88,6 +88,7 @@ export interface RenderCommandArgs {
   "keyframe-interval"?: string;
   "max-bitrate"?: string;
   "buffer-size"?: string;
+  "prores-profile"?: string;
   "vp9-cpu-used"?: string;
   gpu?: boolean;
   "browser-gpu"?: boolean;
