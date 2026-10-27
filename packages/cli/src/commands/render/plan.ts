@@ -15,6 +15,7 @@ import {
   MAX_VP9_CPU_USED,
   MIN_VP9_CPU_USED,
   isVideoFrameFormat,
+  type ProresProfile,
   type VideoFrameFormat,
 } from "@hyperframes/engine";
 import { errorBox } from "../../ui/format.js";
@@ -166,6 +167,7 @@ export interface RenderPlan {
   vp9CpuUsed?: number;
   videoBitrate?: string;
   keyframeIntervalSeconds?: number;
+  proresProfile?: ProresProfile;
   maxBitrate?: string;
   bufferSize?: string;
   hdrMode: HdrMode;
@@ -517,14 +519,23 @@ export function createRenderPlan(args: RenderCommandArgs, now = new Date()): Ren
     const flag = crf !== undefined ? "--crf" : "--video-bitrate";
     errorBox(
       "Unsupported ProRes rate control",
-      `${flag} does not apply to MOV. MOV uses a fixed alpha-preserving ProRes 4444 profile.`,
+      `${flag} does not apply to MOV. MOV rate is set by the ProRes profile; see --prores-profile.`,
       `Remove ${flag}, or choose MP4/WebM when you need CRF or target-bitrate control.`,
     );
     failUsage();
   }
 
   const delivery = parseDeliveryFlags(args);
-  if (Object.keys(delivery).length > 0 && format !== "mp4") {
+  const { proresProfile, ...mp4Delivery } = delivery;
+  if (proresProfile !== undefined && format !== "mov") {
+    errorBox(
+      "ProRes profile applies to MOV",
+      `--prores-profile sets the ProRes profile of a MOV file, not ${format}.`,
+      "Remove it, or render --format mov.",
+    );
+    failUsage();
+  }
+  if (Object.keys(mp4Delivery).length > 0 && format !== "mp4") {
     errorBox(
       "Delivery options apply to MP4",
       "--keyframe-interval, --max-bitrate and --buffer-size set how the MP4 encoder delivers the file.",
